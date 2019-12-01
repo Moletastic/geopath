@@ -154,9 +154,9 @@ type IndMicroBuses map[string]MicroBus
 
 // Ruta almacena el intervalo del recorrido de un microbus
 type Ruta struct {
-	Paraderos []string
-	Microbus  MicroBus
-	Distancia float64
+	Paraderos []string `json:"paraderos"`
+	Microbus  MicroBus `json:"microbus"`
+	Distancia float64  `json:"distancia"`
 }
 
 // SetDistance fija la distancia de ruta de acuerdo a
@@ -206,9 +206,9 @@ func (pairs *CodePairs) Contains(pair *CodePair) bool {
 // Path almacena los pasos a seguir para viajar
 // desde un paradero origen a uno destino
 type Path struct {
-	Origin Paradero
-	Dest   Paradero
-	Steps  []Ruta
+	Origin Paradero `json:"origin"`
+	Dest   Paradero `json:"dest"`
+	Steps  []Ruta   `json:"steps"`
 }
 
 // HasMicroBus revisa si existe un MicroBus en el recorrido

@@ -38,7 +38,7 @@ func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models
 		bcodes := parade.Microbuses
 		for _, bcode := range bcodes {
 			bus := store.IBuses[bcode]
-			for _, destParade := range destParades[0:3] {
+			for _, destParade := range destParades {
 				if bus.GetParaderoIndex(&destParade) != -1 {
 					path := models.Path{Origin: parade, Dest: destParade}
 					step := models.Ruta{Microbus: bus}
@@ -46,6 +46,7 @@ func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models
 					step.SetDistance(store.IParaderos)
 					path.Steps = append(path.Steps, step)
 					useful = append(useful, path)
+					return useful, nil
 				} else {
 					rcode := models.RouteCode{BCode: bus.Recorrido, Origin: parade.Codigo, Dest: destParade.Codigo}
 					if !noavalaible.Contains(&rcode) {
