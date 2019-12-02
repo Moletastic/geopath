@@ -31,8 +31,8 @@ type Paraderos []Paradero
 func (par *Paraderos) GetNextParaderos(location *Coordenada) []Paradero {
 	ps := make([]Paradero, 0)
 	for _, paradero := range *par {
-		l := &Coordenada{Latitud: paradero.Latitud, Longitud: paradero.Longitud}
-		if location.EqualsOrClose(*l, 0.3) {
+		l := (&paradero).ExtractCoord()
+		if location.EqualsOrClose(l, 0.3) {
 			ps = append(ps, paradero)
 		}
 	}
