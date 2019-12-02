@@ -29,3 +29,29 @@ func (h *Handler) GetPath(c echo.Context) error {
 	}
 	return echo.NewHTTPError(422, "Se requieren coordenadas de origen y destino")
 }
+
+// GetMicrobus will be commented
+func (h *Handler) GetMicrobus(c echo.Context) error {
+	id := c.QueryParam("id")
+	if id != "" {
+		microbus, err := h.PathStore.GetMicroBusByID(id)
+		if err != nil {
+			return echo.NewHTTPError(404, err.Error())
+		}
+		return c.JSON(http.StatusOK, microbus)
+	}
+	return echo.NewHTTPError(422, "Se requiere el id del Microbus")
+}
+
+// GetParadero will be commented
+func (h *Handler) GetParadero(c echo.Context) error {
+	id := c.QueryParam("id")
+	if id != "" {
+		paradero, err := h.PathStore.GetParadeByID(id)
+		if err != nil {
+			return echo.NewHTTPError(404, err.Error())
+		}
+		return c.JSON(http.StatusOK, paradero)
+	}
+	return echo.NewHTTPError(422, "Se requiere el id del Paradero")
+}

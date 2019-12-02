@@ -33,7 +33,7 @@ func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models
 	if len(originParades) == 0 || len(destParades) == 0 {
 		return nil, errors.New("No existen paradas cercanas")
 	}
-	useful := make([]models.Path, 0)
+	useful := make(models.Paths, 0)
 	noavalaible := make(models.RouteCodes, 0)
 	for _, parade := range originParades {
 		bcodes := parade.Microbuses
@@ -58,10 +58,9 @@ func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models
 		}
 	}
 	if len(useful) == 0 {
-		sndnoavalaible := make([]models.RouteCodes, 0)
-		//pathchan := make(chan []models.Path)
 		var jobs sync.WaitGroup
 		jobs.Add(len(noavalaible))
+		sndnoavalaible := make([]models.RouteCodes, 0)
 		for _, rcode := range noavalaible {
 			go func(rcode models.RouteCode) {
 				bus := store.IBuses[rcode.BCode]
@@ -70,108 +69,85 @@ func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models
 				routes, unfound := models.GetNextRoutes(&origin, &destination, &bus, &store.IParaderos, &store.IBuses)
 				if len(routes) != 0 {
 					for _, route := range routes {
-						path := models.Path{Origin: origin, Dest: destination}
-						step := models.Ruta{Microbus: bus}
-						step.Paraderos = []string{origin.Codigo, route.Paraderos[0]}
-						step.SetDistance(store.IParaderos)
-						path.Steps = append(path.Steps, step)
-						path.Steps = append(path.Steps, route)
-						useful = append(useful, path)
-						//pathchan <- useful
+						if route.Microbus.Recorrido != bus.Recorrido {
+							path := models.Path{Origin: origin, Dest: destination}
+							step := models.Ruta{Microbus: bus}
+							step.Paraderos = []string{origin.Codigo, route.Paraderos[0]}
+							step.SetDistance(store.IParaderos)
+							path.Steps = append(path.Steps, step)
+							path.Steps = append(path.Steps, route)
+							useful = append(useful, path)
+						}
 					}
 				} else {
 					unavalaible := make(models.RouteCodes, 0)
 					for _, codepair := range unfound {
-						transBus := store.IBuses[codepair.BCode]
-						transParade := store.IParaderos[codepair.PCode]
-						originRC := models.RouteCode{BCode: bus.Recorrido, Origin: rcode.Origin, Dest: rcode.Dest}
-						transRC := models.RouteCode{BCode: transBus.Recorrido, Origin: rcode.Dest, Dest: transParade.Codigo}
-						unavalaible = models.RouteCodes{originRC, transRC}
+						if codepair.BCode != bus.Recorrido {
+							transBus := store.IBuses[codepair.BCode]
+							transParade := store.IParaderos[codepair.PCode]
+							originRC := models.RouteCode{BCode: bus.Recorrido, Origin: rcode.Origin, Dest: transParade.Codigo}
+							transRC := models.RouteCode{BCode: transBus.Recorrido, Origin: transParade.Codigo, Dest: rcode.Dest}
+							unavalaible = models.RouteCodes{originRC, transRC}
+						}
 					}
-					sndnoavalaible = append(sndnoavalaible, unavalaible)
+					if len(unavalaible) != 0 {
+						sndnoavalaible = append(sndnoavalaible, unavalaible)
+					}
 				}
 				jobs.Done()
 			}(rcode)
 		}
-		/* go func() {
-			jobs.Wait()
-			pathchan <- nil
-		}() */
-		jobs.Wait() // sacar despues
-
-		//useful = <-pathchan
-		if len(useful) == 0 {
-			return useful, nil
+		jobs.Wait()
+		if len(useful) != 0 {
+			return []models.Path{*useful.GetBest(&store.IParaderos)}, nil
 		}
-		d := 999.0
-		var best models.Path
-		for _, path := range useful {
-			distance := path.GetDistance(store.IParaderos)
-			if distance < d {
-				d = distance
-				best = path
-			}
-		}
-		return []models.Path{best}, nil
-		/* for _, rcode := range noavalaible {
-			go func(rcode models.RouteCode) {
-				bus := store.IBuses[rcode.BCode]
-				origin := store.IParaderos[rcode.Origin]
-				destination := store.IParaderos[rcode.Dest]
-				routes, unfound := models.GetNextRoutes(&origin, &destination, &bus, &store.IParaderos, &store.IBuses)
-				for _, route := range routes {
-					path := models.Path{Origin: origin, Dest: destination}
-					step := models.Ruta{Microbus: bus}
-					step.Paraderos = []string{origin.Codigo, route.Paraderos[0]}
-					step.SetDistance(store.IParaderos)
-					path.Steps = append(path.Steps, step)
-					path.Steps = append(path.Steps, route)
-					useful = append(useful, path)
-					//pathchan <- useful
-				}
-				if len(routes) == 0 {
-					for _, pair := range unfound {
-						transBus := store.IBuses[pair.BCode]
-						transPar := store.IParaderos[pair.PCode]
-						transferedRoutes, unfoundTrans := models.GetNextRoutes(&transPar, &destination, &transBus, &store.IParaderos, &store.IBuses)
-						for _, transRoute := range transferedRoutes {
-							path := models.Path{Origin: origin, Dest: destination}
-							step := models.Ruta{Microbus: bus}
-							step.Paraderos = []string{origin.Codigo, pair.PCode}
+		jobs.Add(len(sndnoavalaible))
+		for _, routecodes := range sndnoavalaible {
+			go func(routecodes models.RouteCodes) {
+				index := len(routecodes) - 1
+				bus := store.IBuses[routecodes[index].BCode]
+				origin := store.IParaderos[routecodes[index].Origin]
+				for _, dest := range destParades {
+					routes, _ := models.GetNextRoutes(&origin, &dest, &bus, &store.IParaderos, &store.IBuses)
+					if len(routes) != 0 {
+						for _, route := range routes {
+							path := models.Path{Origin: origin, Dest: dest}
+							step := models.Ruta{Microbus: store.IBuses[routecodes[0].BCode]}
+							step.Paraderos = []string{routecodes[0].Origin, routecodes[0].Dest}
 							step.SetDistance(store.IParaderos)
-							transStep := models.Ruta{Microbus: transBus}
-							transStep.Paraderos = []string{pair.PCode, transRoute.Paraderos[0]}
-							transStep.SetDistance(store.IParaderos)
-							path.Steps = []models.Ruta{step, transStep, transRoute}
+							transtep := models.Ruta{Microbus: store.IBuses[routecodes[1].BCode]}
+							transtep.Paraderos = []string{routecodes[1].Origin, route.Paraderos[0]}
+							transtep.SetDistance(store.IParaderos)
+							path.Steps = []models.Ruta{step, transtep, route}
 							useful = append(useful, path)
 						}
-						if len(transferedRoutes) == 0 {
-							for _, cpair := range unfoundTrans {
-								sndTransBus := store.IBuses[cpair.BCode]
-								sndTransPar := store.IParaderos[cpair.PCode]
-								SndTransferedRoutes, _ := models.GetNextRoutes(&sndTransPar, &destination, &sndTransBus, &store.IParaderos, &store.IBuses)
-								for _, sndTransRoute := range SndTransferedRoutes {
-									path := models.Path{Origin: origin, Dest: destination}
-									step := models.Ruta{Microbus: bus}
-									step.Paraderos = []string{origin.Codigo, pair.PCode}
-									step.SetDistance(store.IParaderos)
-									transStep := models.Ruta{Microbus: transBus}
-									transStep.Paraderos = []string{pair.PCode, cpair.PCode}
-									transStep.SetDistance(store.IParaderos)
-									sndTransStep := models.Ruta{Microbus: sndTransBus}
-									sndTransStep.Paraderos = []string{cpair.PCode, sndTransRoute.Paraderos[0]}
-									sndTransStep.SetDistance(store.IParaderos)
-									path.Steps = []models.Ruta{step, transStep, sndTransStep, sndTransRoute}
-									useful = append(useful, path)
-									//pathchan <- useful
-								}
-							}
-						}
 					}
 				}
 				jobs.Done()
-			}(rcode)
-		} */
+			}(routecodes)
+		}
+		jobs.Wait()
+		if len(useful) != 0 {
+			return []models.Path{*useful.GetBest(&store.IParaderos)}, nil
+		}
 	}
 	return useful, nil
+}
+
+// GetParadeByID will be commented
+func (store *PathStore) GetParadeByID(id string) (*models.Paradero, error) {
+	paradero := store.IParaderos[id]
+	if paradero.Codigo != "" {
+		return &paradero, nil
+	}
+	return nil, errors.New("Paradero no encontrado")
+}
+
+// GetMicroBusByID will be commented
+func (store *PathStore) GetMicroBusByID(id string) (*models.MicroBus, error) {
+	bus := store.IBuses[id]
+	if bus.Recorrido != "" {
+		return &bus, nil
+	}
+	return nil, errors.New("MicroBus no encontrado")
 }

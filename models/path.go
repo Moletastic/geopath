@@ -260,6 +260,21 @@ func GetNextRoutes(origin, dest *Paradero, bus *MicroBus, parades *IndParaderos,
 	return routes, unfound
 }
 
+type Paths []Path
+
+func (ps Paths) GetBest(parades *IndParaderos) *Path {
+	var best Path
+	minD := 999.0
+	for _, path := range ps {
+		distance := path.GetDistance(*parades)
+		if distance < minD {
+			minD = distance
+			best = path
+		}
+	}
+	return &best
+}
+
 // PathResponse will be commented
 type PathResponse struct {
 	Data   []Path `json:"data"`
