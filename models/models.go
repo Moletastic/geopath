@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -50,6 +51,9 @@ func GetDistance(a, b Coordenada) float64 {
 func StrToCoord(str string) (Coordenada, error) {
 	var geo Coordenada
 	coords := strings.Split(str, ",")
+	if len(coords) == 1 {
+		return geo, errors.New("Coordenada inválida")
+	}
 	lat, err := strconv.ParseFloat(coords[0], 64)
 
 	if err != nil {

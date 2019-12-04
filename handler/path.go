@@ -14,20 +14,20 @@ func (h *Handler) GetPath(c echo.Context) error {
 	if originParam != "" && destParam != "" {
 		origin, err := models.StrToCoord(originParam)
 		if err != nil {
-			return echo.NewHTTPError(400, "Origen: Coordenadas inválidas")
+			return echo.NewHTTPError(http.StatusBadRequest, "Origen: Coordenadas inválidas")
 		}
 		dest, err := models.StrToCoord(destParam)
 		if err != nil {
-			return echo.NewHTTPError(400, "Destino: Coordenadas inválidas")
+			return echo.NewHTTPError(http.StatusBadRequest, "Destino: Coordenadas inválidas")
 		}
 		data, err := h.PathStore.GetPathToDest(&origin, &dest)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err)
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		response := models.PathResponse{Data: data, Status: http.StatusOK}
 		return c.JSON(http.StatusOK, &response)
 	}
-	return echo.NewHTTPError(422, "Se requieren coordenadas de origen y destino")
+	return echo.NewHTTPError(http.StatusBadRequest, "Se requieren coordenadas de origen y destino")
 }
 
 // GetMicrobus will be commented
@@ -36,11 +36,11 @@ func (h *Handler) GetMicrobus(c echo.Context) error {
 	if id != "" {
 		microbus, err := h.PathStore.GetMicroBusByID(id)
 		if err != nil {
-			return echo.NewHTTPError(404, err.Error())
+			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
 		return c.JSON(http.StatusOK, microbus)
 	}
-	return echo.NewHTTPError(422, "Se requiere el id del Microbus")
+	return echo.NewHTTPError(http.StatusBadRequest, "Se requiere el id del Microbus")
 }
 
 // GetParadero will be commented
@@ -49,9 +49,9 @@ func (h *Handler) GetParadero(c echo.Context) error {
 	if id != "" {
 		paradero, err := h.PathStore.GetParadeByID(id)
 		if err != nil {
-			return echo.NewHTTPError(404, err.Error())
+			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
 		return c.JSON(http.StatusOK, paradero)
 	}
-	return echo.NewHTTPError(422, "Se requiere el id del Paradero")
+	return echo.NewHTTPError(http.StatusBadRequest, "Se requiere el id del Paradero")
 }

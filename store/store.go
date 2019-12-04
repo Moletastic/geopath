@@ -61,6 +61,7 @@ func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models
 		var jobs sync.WaitGroup
 		jobs.Add(len(noavalaible))
 		sndnoavalaible := make([]models.RouteCodes, 0)
+		thdnoavalaible := make([]models.RouteCodes, 0)
 		for _, rcode := range noavalaible {
 			go func(rcode models.RouteCode) {
 				bus := store.IBuses[rcode.BCode]
@@ -101,8 +102,49 @@ func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models
 		if len(useful) != 0 {
 			return []models.Path{*useful.GetBest(&store.IParaderos)}, nil
 		}
+		noavalaible = nil
 		jobs.Add(len(sndnoavalaible))
 		for _, routecodes := range sndnoavalaible {
+			go func(routecodes models.RouteCodes) {
+				index := len(routecodes) - 1
+				bus := store.IBuses[routecodes[index].BCode]
+				origin := store.IParaderos[routecodes[index].Origin]
+				for _, dest := range destParades {
+					routes, unfound := models.GetNextRoutes(&origin, &dest, &bus, &store.IParaderos, &store.IBuses)
+					if len(routes) != 0 {
+						for _, route := range routes {
+							path := models.Path{Origin: origin, Dest: dest}
+							step := models.Ruta{Microbus: store.IBuses[routecodes[0].BCode]}
+							step.Paraderos = []string{routecodes[0].Origin, routecodes[0].Dest}
+							step.SetDistance(store.IParaderos)
+							transtep := models.Ruta{Microbus: store.IBuses[routecodes[1].BCode]}
+							transtep.Paraderos = []string{routecodes[1].Origin, route.Paraderos[0]}
+							transtep.SetDistance(store.IParaderos)
+							path.Steps = []models.Ruta{step, transtep, route}
+							useful = append(useful, path)
+						}
+					} else {
+						unavalaible := make(models.RouteCodes, 0)
+						for _, codepair := range unfound {
+							unavalaible = routecodes
+							route := models.RouteCode{BCode: codepair.BCode, Origin: codepair.PCode, Dest: dest.Codigo}
+							unavalaible[1].Dest = route.Origin
+							unavalaible = append(unavalaible, route)
+						}
+						if len(unavalaible) != 0 {
+							thdnoavalaible = append(thdnoavalaible, unavalaible)
+						}
+					}
+				}
+				jobs.Done()
+			}(routecodes)
+		}
+		jobs.Wait()
+		if len(useful) != 0 {
+			return []models.Path{*useful.GetBest(&store.IParaderos)}, nil
+		}
+		jobs.Add(len(thdnoavalaible))
+		for _, routecodes := range thdnoavalaible {
 			go func(routecodes models.RouteCodes) {
 				index := len(routecodes) - 1
 				bus := store.IBuses[routecodes[index].BCode]
@@ -116,9 +158,12 @@ func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models
 							step.Paraderos = []string{routecodes[0].Origin, routecodes[0].Dest}
 							step.SetDistance(store.IParaderos)
 							transtep := models.Ruta{Microbus: store.IBuses[routecodes[1].BCode]}
-							transtep.Paraderos = []string{routecodes[1].Origin, route.Paraderos[0]}
+							transtep.Paraderos = []string{routecodes[1].Origin, routecodes[2].Origin}
 							transtep.SetDistance(store.IParaderos)
-							path.Steps = []models.Ruta{step, transtep, route}
+							sndtranstep := models.Ruta{Microbus: store.IBuses[routecodes[2].BCode]}
+							sndtranstep.Paraderos = []string{routecodes[2].Origin, route.Paraderos[0]}
+							sndtranstep.SetDistance(store.IParaderos)
+							path.Steps = []models.Ruta{step, transtep, sndtranstep, route}
 							useful = append(useful, path)
 						}
 					}
