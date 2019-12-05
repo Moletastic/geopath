@@ -29,11 +29,12 @@ func (c *Coordenada) EqualsOrClose(coord Coordenada, delta float64) bool {
 	return false
 }
 
-// ToStr will be commented
+// ToStr retorna la conversión a string de Coordenada
 func (c *Coordenada) ToStr() string {
 	return fmt.Sprintf("%f,%f", c.Latitud, c.Longitud)
 }
 
+// GetDistance retorna la distancia entre 2 coordenadas
 func GetDistance(a, b Coordenada) float64 {
 	R := 6373.0
 	lat1 := utils.ToRad(a.Latitud)
@@ -47,7 +48,8 @@ func GetDistance(a, b Coordenada) float64 {
 	return fact2 * R
 }
 
-// StrToCoord will be commented
+// StrToCoord retorna una coordenada mediante un
+// string o un error
 func StrToCoord(str string) (Coordenada, error) {
 	var geo Coordenada
 	coords := strings.Split(str, ",")

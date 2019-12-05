@@ -2,7 +2,7 @@ package handler
 
 import "github.com/labstack/echo/v4"
 
-// Register adds a group for router
+// Register registra rutas a un grupo de rutas
 func (h *Handler) Register(v4 *echo.Group) {
 	path := v4.Group("/path")
 	path.GET("", h.GetPath)

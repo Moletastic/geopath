@@ -19,15 +19,16 @@ type Paradero struct {
 	Microbuses []string `json:"microbuses"`
 }
 
-// ExtractCoord will be commented
+// ExtractCoord retorna una Coordenada apartir de
+// la latitud y longitud de ubicación del paradero
 func (p *Paradero) ExtractCoord() Coordenada {
 	return Coordenada{Latitud: p.Latitud, Longitud: p.Longitud}
 }
 
-// Paraderos will be commented
+// Paraderos representa un array de Paradero
 type Paraderos []Paradero
 
-// GetNextParaderos will be commented
+// GetNextParaderos retorna los paraderos más cercanos a una coordenada
 func (par *Paraderos) GetNextParaderos(location *Coordenada) []Paradero {
 	ps := make([]Paradero, 0)
 	for _, paradero := range *par {
@@ -39,7 +40,7 @@ func (par *Paraderos) GetNextParaderos(location *Coordenada) []Paradero {
 	return ps
 }
 
-// GetNearest will be commented
+// GetNearest obtiene el paradero más cercano a una ubicación
 func (par *Paraderos) GetNearest(location Coordenada) Paradero {
 	var p Paradero
 	d := 999.0
@@ -53,7 +54,8 @@ func (par *Paraderos) GetNearest(location Coordenada) Paradero {
 	return p
 }
 
-// SortByCoordDistance will be commented
+// SortByCoordDistance ordena los paraderos almacenados
+// de acuerdo a la cercanía de estos respecto a una ubicación
 func (par *Paraderos) SortByCoordDistance(location *Coordenada) {
 	sort.Slice((*par)[:], func(i, j int) bool {
 		l1 := (*par)[i].ExtractCoord()
@@ -62,7 +64,7 @@ func (par *Paraderos) SortByCoordDistance(location *Coordenada) {
 	})
 }
 
-// ToIndParaderos will be commented
+// ToIndParaderos retorna un mapa indexado de Paraderos por su código
 func (par *Paraderos) ToIndParaderos() IndParaderos {
 	indexed := make(map[string]Paradero, 0)
 	for _, paradero := range *par {
@@ -106,7 +108,8 @@ func (m MicroBus) GetNextParaderosFrom(paradero *Paradero) []string {
 	return nil
 }
 
-// GetParaderosBetween will be commented
+// GetParaderosBetween retorna los códigos de paraderos
+// del recorrido del MicroBus entre un paradero de origen y destino
 func (m MicroBus) GetParaderosBetween(origin, dest *Paradero) []string {
 	originIndex := m.GetParaderoIndex(origin)
 	destIndex := m.GetParaderoIndex(dest)
@@ -117,7 +120,8 @@ func (m MicroBus) GetParaderosBetween(origin, dest *Paradero) []string {
 	return nil
 }
 
-// IsNextParadero will be commented
+// IsNextParadero retorna sí un paradero destino, se encuentra
+// en el recorrido del MicroBus luego de un paradero de origen
 func (m MicroBus) IsNextParadero(origin, dest *Paradero) bool {
 	nextParaderos := m.GetNextParaderosFrom(origin)
 	if utils.StrListContains(nextParaderos, &dest.Codigo) {
@@ -126,10 +130,10 @@ func (m MicroBus) IsNextParadero(origin, dest *Paradero) bool {
 	return false
 }
 
-// MicroBuses will be commented
+// MicroBuses representa un array de MicroBus
 type MicroBuses []MicroBus
 
-// Contains will be commented
+// Contains retorna sí un MicroBus se encuentra almacenado
 func (ms *MicroBuses) Contains(m MicroBus) bool {
 	for _, mb := range *ms {
 		if mb.Recorrido == m.Recorrido {
@@ -139,7 +143,7 @@ func (ms *MicroBuses) Contains(m MicroBus) bool {
 	return false
 }
 
-// ToIndMicroBuses will be commented
+// ToIndMicroBuses retorna un mapa de microbuses indexado por Código
 func (ms *MicroBuses) ToIndMicroBuses() IndMicroBuses {
 	indexed := make(IndMicroBuses, 0)
 	for _, micro := range *ms {
@@ -173,14 +177,17 @@ type CodePair struct {
 	PCode string
 }
 
+// RouteCode almacena el código de un microbus, y de paraderos de origen y destino
 type RouteCode struct {
 	BCode  string
 	Origin string
 	Dest   string
 }
 
+// RouteCodes representa un array de RouteCode
 type RouteCodes []RouteCode
 
+// Contains retorna sí un RouteCode se encuentra en el array
 func (rcodes *RouteCodes) Contains(rcode *RouteCode) bool {
 	for _, rc := range *rcodes {
 		if rc.Origin == rcode.Origin && rc.Dest == rcode.Dest && rc.BCode == rcode.BCode {
@@ -189,19 +196,6 @@ func (rcodes *RouteCodes) Contains(rcode *RouteCode) bool {
 	}
 	return false
 }
-
-/* // CodePairs will be commented
-type CodePairs []CodePair
-
-// Contains will be commented
-func (pairs *CodePairs) Contains(pair *CodePair) bool {
-	for _, p := range *pairs {
-		if p.PCode == pair.PCode && p.BCode == pair.BCode {
-			return true
-		}
-	}
-	return false
-} */
 
 // Path almacena los pasos a seguir para viajar
 // desde un paradero origen a uno destino
@@ -222,7 +216,8 @@ func (p *Path) HasMicroBus(m MicroBus) bool {
 	return false
 }
 
-// GetDistance will be commented
+// GetDistance retorna la distancia total de todos los paraderos
+// en los que se realiza un trasbordo o fin de ruta
 func (p *Path) GetDistance(paraderos IndParaderos) float64 {
 	totalDistance := 0.0
 	for _, step := range p.Steps {
@@ -235,7 +230,10 @@ func (p *Path) GetDistance(paraderos IndParaderos) float64 {
 	return totalDistance
 }
 
-// GetNextRoutes will be commented
+// GetNextRoutes retorna las posibles rutas de a un destino, basado
+// en el recorrido de todos los otros buses, que pueden ser tomados
+// en los próximos paraderos. Además retorna los pares de código,
+// de los buses que no pasan por el destino, y el paradero en el que se tomó
 func GetNextRoutes(origin, dest *Paradero, bus *MicroBus, parades *IndParaderos, buses *IndMicroBuses) ([]Ruta, []CodePair) {
 	nextParades := bus.GetNextParaderosFrom(origin)
 	unfound := make([]CodePair, 0)
@@ -260,8 +258,11 @@ func GetNextRoutes(origin, dest *Paradero, bus *MicroBus, parades *IndParaderos,
 	return routes, unfound
 }
 
+// Paths representa un array de Path
 type Paths []Path
 
+// GetBest retorna el Path con menor distancia total entre
+// todos sus path
 func (ps Paths) GetBest(parades *IndParaderos) *Path {
 	var best Path
 	minD := 999.0
@@ -275,13 +276,15 @@ func (ps Paths) GetBest(parades *IndParaderos) *Path {
 	return &best
 }
 
-// PathResponse will be commented
+// PathResponse contiene los datos de una respuesta
+// a peticiones de un Path
 type PathResponse struct {
 	Data   []Path `json:"data"`
 	Status int    `json:"status"`
 }
 
-// GetBuses will be commented
+// GetBuses retorna una estructura MicroBuses con los datos
+// contenidos en el archivo con el nombre fijado, o un error
 func GetBuses(filename string) (MicroBuses, error) {
 	buses := make(MicroBuses, 0)
 	file, err := os.Open(filename)
@@ -300,7 +303,8 @@ func GetBuses(filename string) (MicroBuses, error) {
 	return buses, nil
 }
 
-// GetParaderos will be commented
+// GetParaderos retorna una estructura Paraderos con los datos
+// contenidos en el archivo con el nombre fijado, o un error
 func GetParaderos(filename string) (Paraderos, error) {
 	paraderos := make(Paraderos, 0)
 	file, err := os.Open(filename)

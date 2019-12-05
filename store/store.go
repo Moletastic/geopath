@@ -7,6 +7,7 @@ import (
 	"github.com/Moletastic/geopath/models"
 )
 
+// PathStore almacena los datos de paraderos y buses
 type PathStore struct {
 	Paraderos  models.Paraderos
 	IParaderos models.IndParaderos
@@ -14,7 +15,7 @@ type PathStore struct {
 	IBuses     models.IndMicroBuses
 }
 
-// NewPathStore will be commented
+// NewPathStore crea un nuevo PathStore
 func NewPathStore(paraderos models.Paraderos, buses models.MicroBuses) *PathStore {
 	return &PathStore{
 		Paraderos:  paraderos,
@@ -24,7 +25,7 @@ func NewPathStore(paraderos models.Paraderos, buses models.MicroBuses) *PathStor
 	}
 }
 
-// GetPathToDest will be commented
+// GetPathToDest retorna el Path con menor cantidad de trasbordos, o un error
 func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models.Path, error) {
 	store.Paraderos.SortByCoordDistance(origin)
 	originParades := store.Paraderos.GetNextParaderos(origin)
@@ -35,6 +36,7 @@ func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models
 	}
 	useful := make(models.Paths, 0)
 	noavalaible := make(models.RouteCodes, 0)
+	// Buscando Path sin trasbordo
 	for _, parade := range originParades {
 		bcodes := parade.Microbuses
 		for _, bcode := range bcodes {
@@ -62,6 +64,7 @@ func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models
 		jobs.Add(len(noavalaible))
 		sndnoavalaible := make([]models.RouteCodes, 0)
 		thdnoavalaible := make([]models.RouteCodes, 0)
+		// Buscando Path con 1 trasbordo
 		for _, rcode := range noavalaible {
 			go func(rcode models.RouteCode) {
 				bus := store.IBuses[rcode.BCode]
@@ -104,6 +107,7 @@ func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models
 		}
 		noavalaible = nil
 		jobs.Add(len(sndnoavalaible))
+		// Buscando Path con 2 trasbordos
 		for _, routecodes := range sndnoavalaible {
 			go func(routecodes models.RouteCodes) {
 				index := len(routecodes) - 1
@@ -143,6 +147,7 @@ func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models
 		if len(useful) != 0 {
 			return []models.Path{*useful.GetBest(&store.IParaderos)}, nil
 		}
+		// Buscando Path con 3 trasbordos
 		jobs.Add(len(thdnoavalaible))
 		for _, routecodes := range thdnoavalaible {
 			go func(routecodes models.RouteCodes) {
@@ -179,7 +184,7 @@ func (store *PathStore) GetPathToDest(origin, dest *models.Coordenada) ([]models
 	return useful, nil
 }
 
-// GetParadeByID will be commented
+// GetParadeByID retorna el paradero con el id entregado
 func (store *PathStore) GetParadeByID(id string) (*models.Paradero, error) {
 	paradero := store.IParaderos[id]
 	if paradero.Codigo != "" {
@@ -188,7 +193,7 @@ func (store *PathStore) GetParadeByID(id string) (*models.Paradero, error) {
 	return nil, errors.New("Paradero no encontrado")
 }
 
-// GetMicroBusByID will be commented
+// GetMicroBusByID retorna el microbus con el id entregado
 func (store *PathStore) GetMicroBusByID(id string) (*models.MicroBus, error) {
 	bus := store.IBuses[id]
 	if bus.Recorrido != "" {

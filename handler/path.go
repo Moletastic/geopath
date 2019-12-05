@@ -7,7 +7,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// GetPath will be commented
+// GetPath retorna una respuesta con el Path con menos trasbordos
+// de acuerdo a las coordenadas de origen y destino
 func (h *Handler) GetPath(c echo.Context) error {
 	originParam := c.QueryParam("origin")
 	destParam := c.QueryParam("destination")
@@ -30,7 +31,7 @@ func (h *Handler) GetPath(c echo.Context) error {
 	return echo.NewHTTPError(http.StatusBadRequest, "Se requieren coordenadas de origen y destino")
 }
 
-// GetMicrobus will be commented
+// GetMicrobus retorna el microbus con el id fijado
 func (h *Handler) GetMicrobus(c echo.Context) error {
 	id := c.QueryParam("id")
 	if id != "" {
@@ -43,7 +44,7 @@ func (h *Handler) GetMicrobus(c echo.Context) error {
 	return echo.NewHTTPError(http.StatusBadRequest, "Se requiere el id del Microbus")
 }
 
-// GetParadero will be commented
+// GetParadero retorna el paradero con el id fijado
 func (h *Handler) GetParadero(c echo.Context) error {
 	id := c.QueryParam("id")
 	if id != "" {
