@@ -4,13 +4,20 @@ import (
 	"fmt"
 	"log"
 	"os"
-
+	_"github.com/Moletastic/geopath/docs"
 	"github.com/Moletastic/geopath/handler"
 	"github.com/Moletastic/geopath/models"
 	"github.com/Moletastic/geopath/router"
 	"github.com/Moletastic/geopath/store"
 	"github.com/joho/godotenv"
 )
+
+// @title Proyecto Computación Distribuida
+// @version 1.0
+// @description Esta API entregará el recorrido en micro (con menos transbordos posibles) para dos coordenadas de inicio y destino
+// @host ec2-3-136-84-231.us-east-2.compute.amazonaws.com
+// @BasePath /api
+// @tag.name Geopaths
 
 func main() {
 	r := router.New()
