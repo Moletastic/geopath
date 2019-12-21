@@ -20,8 +20,8 @@ La búsqueda de los recorridos en micro se realizó con diferentes ciclos de bú
 * Pedro Valderrama
 * Diego Sepúlveda
 
-# Construir imagen de docker a partir de Dockerfile
+### Construir imagen de docker a partir de Dockerfile
 docker build -t backend-proyecto-cpd:1.0 -f Dockerfile .
 
-# Ejecutar contenedor en modo deamon exponiendo el puerto 80
+### Ejecutar contenedor en modo deamon exponiendo el puerto 80
 docker run -d -p 80:8080 backend-proyecto-cpd:1.0
